@@ -11,7 +11,9 @@
 #import "UIImage+Filter.h"
 
 @interface ViewController ()<UITableViewDelegate,UITableViewDataSource>
-
+{
+    LBWSocialTableViewModel * _model;
+}
 @property (nonatomic,strong)UITableView * tableView;
 @end
 
@@ -20,7 +22,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    _tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    _model = [[LBWSocialTableViewModel alloc] init];
+    _model.nickName = @"李博文";
+    _model.iconUrl = @"http://tva1.sinaimg.cn/crop.0.0.2048.2048.50/c0894007jw8eo090gvai2j21kw1kwgox.jpg";
+    
+    _tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 40, self.view.frame.size.width, self.view.frame.size.height - 40)];
     _tableView.delegate = self;
     _tableView.dataSource = self;
     _tableView.rowHeight = 120;
@@ -48,6 +54,10 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     LBWSocialTableViewCell * cell = [tableView dequeueReusableCellWithIdentifier:@"test" forIndexPath:indexPath];
+//    if (_model)
+//    {
+        [cell drawContentWithModel:_model];
+//    }
     return cell;
 }
 @end

@@ -17,13 +17,6 @@
 
 @end
 
-@implementation LBWSocialTableViewModel
-
-
-
-@end
-
-
 #pragma mark    LBWSocialTableViewCell Class
 @interface LBWSocialTableViewCell : UITableViewCell
 

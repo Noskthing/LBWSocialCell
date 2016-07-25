@@ -11,7 +11,19 @@
 #import "SDWebImageManager.h"
 #import "UIImage+Filter.h"
 
+#import "NSString+Draw.h"
+#import "NSString+Additions.h"
 
+#pragma mark    LBWSocialTableViewModel Class
+@implementation LBWSocialTableViewModel
+
+-(void)setValue:(id)value forUndefinedKey:(NSString *)key
+{
+    
+}
+
+
+@end
 #pragma mark    ImageLayer Class
 @interface ImageLayer : CALayer
 {
@@ -58,7 +70,7 @@
             //kCFRunLoopBeforeWaiting | kCFRunLoopExit
             if (!_observe)
             {
-                _observe = CFRunLoopObserverCreateWithHandler(kCFAllocatorDefault, kCFRunLoopBeforeWaiting | kCFRunLoopExit, false, 2000, ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
+                _observe = CFRunLoopObserverCreateWithHandler(kCFAllocatorDefault, kCFRunLoopBeforeWaiting | kCFRunLoopExit, true, 2000, ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
                     strongSelf.contents = (__bridge id)image.CGImage;
                 });
             }
@@ -99,6 +111,11 @@
         self.contents = (__bridge id)self.orginImage.CGImage;
     }
 }
+
+-(void)dealloc
+{
+    CFRunLoopRemoveObserver(CFRunLoopGetCurrent(), _observe, kCFRunLoopCommonModes);
+}
 @end
 
 @interface LBWSocialTableViewCell ()
@@ -107,6 +124,11 @@
 }
 @end
 
+static CGFloat kTopEdge = 20;
+static CGFloat kIconLeftEdge = 10;
+static CGFloat kIconSide = 30;
+
+static CGFloat kNickNameLeftEdge = 50;
 @implementation LBWSocialTableViewCell
 
 -(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
@@ -116,8 +138,7 @@
         self.selectionStyle = UITableViewCellSelectionStyleNone;
         
         _icon = [ImageLayer layer];
-        _icon.frame = CGRectMake(10, 20, 40, 40);
-        [_icon setContentWitURL:@"http://tva1.sinaimg.cn/crop.0.0.2048.2048.50/c0894007jw8eo090gvai2j21kw1kwgox.jpg"];
+        _icon.frame = CGRectMake(kIconLeftEdge, kTopEdge, kIconSide, kIconSide);
         [self.layer addSublayer:_icon];
     }
     return self;
@@ -129,7 +150,8 @@
     [_icon setContentWitURL:model.iconUrl];
     
     //nickName
-    
+//    [model.nickName drawTextOnContext:UIGraphicsGetCurrentContext() position:CGPointMake(kNickNameLeftEdge, kTopEdge) font:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] textSize:CGSizeMake(self.frame.size.width - kNickNameLeftEdge, 20) lineBreakMode:kCTLineBreakByTruncatingTail];
+    [model.nickName drawInContext:UIGraphicsGetCurrentContext() withPosition:CGPointMake(kNickNameLeftEdge, kTopEdge) andFont:[UIFont systemFontOfSize:15] andTextColor:[UIColor blackColor] andHeight:50 lineBreakMode:kCTLineBreakByTruncatingTail];
 }
 
 #pragma mark    Touch Events
