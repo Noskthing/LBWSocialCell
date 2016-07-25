@@ -146,12 +146,35 @@ static CGFloat kNickNameLeftEdge = 50;
 
 -(void)drawContentWithModel:(LBWSocialTableViewModel *)model
 {
-    //icon
+    //get current context
+    
+    /*
+     
+     if u don't use UIGraphicsBeginImageContextWithOptions to create context , u will get warning about context that tell u context is invalid 0x0. 
+     
+     the advise that changing ur info.plist param view-baseController status style doesn't work. 
+     
+     because u can't use UIGraphicsGetCurrentContext to get context here. it works on drawRect: function.
+     
+     */
+    UIGraphicsBeginImageContextWithOptions(self.frame.size, YES, 0);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    [[UIColor whiteColor] set];
+    CGContextFillRect(context, CGRectMake(0, 0, self.frame.size.width, self.frame.size.height));
+    
+    //icon's layer is self.contentView's subLayer
     [_icon setContentWitURL:model.iconUrl];
     
-    //nickName
-//    [model.nickName drawTextOnContext:UIGraphicsGetCurrentContext() position:CGPointMake(kNickNameLeftEdge, kTopEdge) font:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] textSize:CGSizeMake(self.frame.size.width - kNickNameLeftEdge, 20) lineBreakMode:kCTLineBreakByTruncatingTail];
-    [model.nickName drawInContext:UIGraphicsGetCurrentContext() withPosition:CGPointMake(kNickNameLeftEdge, kTopEdge) andFont:[UIFont systemFontOfSize:15] andTextColor:[UIColor blackColor] andHeight:50 lineBreakMode:kCTLineBreakByTruncatingTail];
+    //draw nickName on context which is self.contentView.layer.content
+    [model.nickName drawTextOnContext:context position:CGPointMake(kNickNameLeftEdge, kTopEdge) font:[UIFont systemFontOfSize:13] textColor:[UIColor blackColor] textSize:CGSizeMake(100, 50) lineBreakMode:kCTLineBreakByTruncatingTail];
+    
+    
+    //get image from context and set it as self.contentView.layer.content
+    UIImage *contentImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    self.contentView.layer.contents = (__bridge id)contentImage.CGImage;
+    
 }
 
 #pragma mark    Touch Events

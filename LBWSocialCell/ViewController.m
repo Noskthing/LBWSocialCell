@@ -23,7 +23,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     _model = [[LBWSocialTableViewModel alloc] init];
-    _model.nickName = @"李博文";
+    _model.nickName = @"可爱的姚梦圆";
     _model.iconUrl = @"http://tva1.sinaimg.cn/crop.0.0.2048.2048.50/c0894007jw8eo090gvai2j21kw1kwgox.jpg";
     
     _tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 40, self.view.frame.size.width, self.view.frame.size.height - 40)];

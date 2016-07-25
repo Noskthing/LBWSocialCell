@@ -18,7 +18,7 @@
     //Set line height, font, color and break mode
     CTFontRef font1 = CTFontCreateWithName((__bridge CFStringRef)font.fontName, font.pointSize,NULL);
     //Apply paragraph settings
-    CGFloat minimumLineHeight = font.pointSize,maximumLineHeight = minimumLineHeight+10;
+//    CGFloat minimumLineHeight = font.pointSize,maximumLineHeight = minimumLineHeight+10;
     //    CTLineBreakMode lineBreakMode = kCTLineBreakByTruncatingTail;
     CTTextAlignment alignment = kCTLeftTextAlignment;
     CGFloat linespace = 3;
