@@ -35,8 +35,6 @@
 		FF41E7541D4340B70012657E /* UIImageView+WebCache.m in Sources */ = {isa = PBXBuildFile; fileRef = FF41E7431D4340B70012657E /* UIImageView+WebCache.m */; };
 		FF41E7551D4340B70012657E /* UIView+WebCacheOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = FF41E7451D4340B70012657E /* UIView+WebCacheOperation.m */; };
 		FF41E7581D434ABD0012657E /* NSString+Draw.m in Sources */ = {isa = PBXBuildFile; fileRef = FF41E7571D434ABD0012657E /* NSString+Draw.m */; };
-		FF8BF8571D43576E005D0373 /* NSString+Additions.m in Sources */ = {isa = PBXBuildFile; fileRef = FF8BF8561D43576E005D0373 /* NSString+Additions.m */; };
-		FF8BF85A1D4357E7005D0373 /* StringAttributes.m in Sources */ = {isa = PBXBuildFile; fileRef = FF8BF8591D4357E7005D0373 /* StringAttributes.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -114,10 +112,6 @@
 		FF41E7451D4340B70012657E /* UIView+WebCacheOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIView+WebCacheOperation.m"; sourceTree = "<group>"; };
 		FF41E7561D434ABD0012657E /* NSString+Draw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Draw.h"; sourceTree = "<group>"; };
 		FF41E7571D434ABD0012657E /* NSString+Draw.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Draw.m"; sourceTree = "<group>"; };
-		FF8BF8551D43576E005D0373 /* NSString+Additions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Additions.h"; sourceTree = "<group>"; };
-		FF8BF8561D43576E005D0373 /* NSString+Additions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Additions.m"; sourceTree = "<group>"; };
-		FF8BF8581D4357E7005D0373 /* StringAttributes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StringAttributes.h; sourceTree = "<group>"; };
-		FF8BF8591D4357E7005D0373 /* StringAttributes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StringAttributes.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -220,10 +214,6 @@
 				6DFFB7C31D421D7A00BC52C7 /* UIImage+Filter.m */,
 				FF41E7561D434ABD0012657E /* NSString+Draw.h */,
 				FF41E7571D434ABD0012657E /* NSString+Draw.m */,
-				FF8BF8551D43576E005D0373 /* NSString+Additions.h */,
-				FF8BF8561D43576E005D0373 /* NSString+Additions.m */,
-				FF8BF8581D4357E7005D0373 /* StringAttributes.h */,
-				FF8BF8591D4357E7005D0373 /* StringAttributes.m */,
 			);
 			name = Category;
 			sourceTree = "<group>";
@@ -415,12 +405,10 @@
 				6DFFB7891D42058500BC52C7 /* NSDictionary+AttributeString.m in Sources */,
 				FF41E7461D4340B70012657E /* MKAnnotationView+WebCache.m in Sources */,
 				FF41E7491D4340B70012657E /* SDWebImageCompat.m in Sources */,
-				FF8BF8571D43576E005D0373 /* NSString+Additions.m in Sources */,
 				6DFFB7561D42056100BC52C7 /* main.m in Sources */,
 				FF41E7581D434ABD0012657E /* NSString+Draw.m in Sources */,
 				6DFFB7C41D421D7A00BC52C7 /* UIImage+Filter.m in Sources */,
 				FF41E7511D4340B70012657E /* UIImage+MultiFormat.m in Sources */,
-				FF8BF85A1D4357E7005D0373 /* StringAttributes.m in Sources */,
 				FF41E7531D4340B70012657E /* UIImageView+HighlightedWebCache.m in Sources */,
 				FF41E7501D4340B70012657E /* UIImage+GIF.m in Sources */,
 			);

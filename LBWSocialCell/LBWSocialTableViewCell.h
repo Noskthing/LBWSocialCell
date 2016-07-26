@@ -7,6 +7,8 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "NSString+Draw.h"
+#import "UIImage+Filter.h"
 
 #pragma mark    LBWSocialTableViewModel Class
 @interface LBWSocialTableViewModel : NSObject
@@ -15,7 +17,17 @@
 
 @property (nonatomic,copy)NSString * nickName;
 
+@property (nonatomic,copy)NSString * source;
+
+@property (nonatomic,copy)NSString * content;
+
+@property (nonatomic,assign)CGSize contentSize;
+
+@property (nonatomic,assign)CGFloat cellHeight;
+
 @end
+
+static const CGFloat kContentTextMaxWidthScale = 0.75;
 
 #pragma mark    LBWSocialTableViewCell Class
 @interface LBWSocialTableViewCell : UITableViewCell

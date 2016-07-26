@@ -9,18 +9,25 @@
 #import "LBWSocialTableViewCell.h"
 
 #import "SDWebImageManager.h"
-#import "UIImage+Filter.h"
 
-#import "NSString+Draw.h"
-#import "NSString+Additions.h"
 
 #pragma mark    LBWSocialTableViewModel Class
 @implementation LBWSocialTableViewModel
 
+-(instancetype)init
+{
+    if (self = [super init])
+    {
+        self.cellHeight = 65;
+    }
+    
+    return self;
+}
 -(void)setValue:(id)value forUndefinedKey:(NSString *)key
 {
     
 }
+
 
 
 @end
@@ -56,6 +63,8 @@
 
 - (void)setContentWitURL:(NSString *)url
 {
+    self.cornerRadius = self.frame.size.width/2;
+    
     //UIImage.CGImage return CGImageRef type object so that u need use __bridge to change it.
     self.contents = (__bridge id)([UIImage imageNamed:@"placeHolder"].CGImage);
     
@@ -66,7 +75,7 @@
         __strong __typeof(weakSelf)strongSelf = weakSelf;
         if (image)
         {
-            //we will add image when rl is free so that it will nor affect scrolling animation
+            //we will add image when rl is free so that it will not affect scrolling animation
             //kCFRunLoopBeforeWaiting | kCFRunLoopExit
             if (!_observe)
             {
@@ -126,9 +135,9 @@
 
 static CGFloat kTopEdge = 20;
 static CGFloat kIconLeftEdge = 10;
-static CGFloat kIconSide = 30;
+static CGFloat kIconSide = 40;
 
-static CGFloat kNickNameLeftEdge = 50;
+static CGFloat kNickNameLeftEdge = 60;
 @implementation LBWSocialTableViewCell
 
 -(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
@@ -165,9 +174,12 @@ static CGFloat kNickNameLeftEdge = 50;
     //icon's layer is self.contentView's subLayer
     [_icon setContentWitURL:model.iconUrl];
     
-    //draw nickName on context which is self.contentView.layer.content
-    [model.nickName drawTextOnContext:context position:CGPointMake(kNickNameLeftEdge, kTopEdge) font:[UIFont systemFontOfSize:13] textColor:[UIColor blackColor] textSize:CGSizeMake(100, 50) lineBreakMode:kCTLineBreakByTruncatingTail];
+    //draw text on context which is self.contentView.layer.content
+    [model.nickName drawTextOnContext:context position:CGPointMake(kNickNameLeftEdge, kTopEdge) font:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] textSize:CGSizeMake(self.frame.size.width - kNickNameLeftEdge, 22) lineBreakMode:kCTLineBreakByTruncatingTail];
     
+    [model.source drawTextOnContext:context position:CGPointMake(kNickNameLeftEdge, kTopEdge + 22) font:[UIFont systemFontOfSize:12] textColor:[UIColor lightGrayColor] textSize:CGSizeMake(self.frame.size.width - kNickNameLeftEdge, 18) lineBreakMode:kCTLineBreakByTruncatingTail];
+    
+    [model.content drawTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 5) font:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] textSize:model.contentSize lineBreakMode:kCTLineBreakByWordWrapping];
     
     //get image from context and set it as self.contentView.layer.content
     UIImage *contentImage = UIGraphicsGetImageFromCurrentImageContext();
