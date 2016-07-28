@@ -28,8 +28,6 @@
     
 }
 
-
-
 @end
 #pragma mark    ImageLayer Class
 @interface ImageLayer : CALayer
@@ -127,6 +125,84 @@
 }
 @end
 
+#pragma mark    ContentManager
+
+#define EmojiRegular @"(\\[\\w+\\])"
+
+typedef enum {
+    ContentAlignmentTop,
+    ContentAlignmentCenter,
+    ContentAlignmentBottom
+}ContentAlignment;
+
+@interface ContentManager : NSObject
+
+@property (nonatomic,strong)NSString * string;
+
+@property (nonatomic,strong)UIFont * font;
+
+@property (nonatomic,strong)UIColor * textColor;
+
+@property (nonatomic,assign)ContentAlignment contentAlignment;
+
+@property (nonatomic,assign)UIEdgeInsets margin;
+
+@property (nonatomic,assign)CGFloat fontAscent;
+
+@property (nonatomic,assign)CGFloat fontDescent;
+
+@property (nonatomic,assign)CGSize maxSize;
+
+- (instancetype)initWithFont:(UIFont *)font
+                   textColor:(UIColor *)textColor
+            contentAlignment:(ContentAlignment)ContentAlignmentCenter
+                     maxSize:(CGSize)maxSize
+                      string:(NSString *)string;
+@end
+
+@implementation ContentManager
+
+-(instancetype)init
+{
+    if (self = [super init])
+    {
+        _font = [UIFont systemFontOfSize:17];
+        _textColor = [UIColor blackColor];
+        _contentAlignment = ContentAlignmentCenter;
+    }
+    return self;
+}
+
+-(instancetype)initWithFont:(UIFont *)font textColor:(UIColor *)textColor contentAlignment:(ContentAlignment)contentAlignment maxSize:(CGSize)maxSize string:(NSString *)string
+{
+    NSAssert(font, @"Font can not be nil");
+    NSAssert(textColor, @"TextColor can not be nil");
+    NSAssert(contentAlignment, @"ContentAlignment can not be nil");
+    
+    ContentManager * manager = [self init];
+    manager.font = font;
+    manager.textColor = textColor;
+    manager.contentAlignment = contentAlignment;
+    manager.maxSize = maxSize;
+    manager.string = string;
+    
+    return manager;
+}
+
+-(void)drawContentText
+{
+//    NSArray* matches = [[NSRegularExpression regularExpressionWithPattern:EmojiRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self.string options:0 range:NSMakeRange(0,[self.string length])];
+    
+//    for(NSTextCheckingResult* match in matches)
+//    {
+////        [self.string substringWithRange:NS]
+////        match. =
+//    }
+}
+
+@end
+
+#pragma mark    LBWSocialTableViewCell
 @interface LBWSocialTableViewCell ()
 {
     ImageLayer * _icon;
@@ -189,5 +265,6 @@ static CGFloat kNickNameLeftEdge = 60;
     
 }
 
-#pragma mark    Touch Events
+#pragma mark    -Touch Events
+
 @end
