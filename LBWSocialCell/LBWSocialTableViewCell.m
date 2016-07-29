@@ -338,6 +338,7 @@ CGFloat widthCallback(void* ref)
 
 @property (nonatomic,copy)NSMutableAttributedString * attributeString;
 
+@property (nonatomic,strong)NSMutableArray * attachments;
 @end
 
 @implementation ContentManager
@@ -349,6 +350,8 @@ CGFloat widthCallback(void* ref)
         _font = [UIFont systemFontOfSize:17];
         _textColor = [UIColor blackColor];
         _contentAlignment = ContentAlignmentCenter;
+        
+        _attachments = [NSMutableArray array];
         
         [self resetFont];
     }
@@ -425,7 +428,7 @@ CGFloat widthCallback(void* ref)
         AttributeStringAttachment *attachment = [AttributeStringAttachment attachmentWith:[UIImage imageNamed:@"wheel"]
                                                                                 margin:_margin
                                                                                 alignment:_contentAlignment
-                                                                                  maxSize:_maxSize];
+                                                                                  maxSize:CGSizeMake(15, 15)];
         [self appendAttributeStringAttachment:attachment];
     }
     
@@ -452,7 +455,7 @@ CGFloat widthCallback(void* ref)
     [attachText setAttributes:attr range:NSMakeRange(0, 1)];
     CFRelease(delegate);
     
-//    [_attachments addObject:attachment];
+    [_attachments addObject:attachment];
     [_attributeString appendAttributedString:attachText];
 }
 @end
