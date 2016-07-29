@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import "NSDictionary+AttributeString.h"
 
 @interface NSString (Draw)
 
@@ -27,6 +28,8 @@
                textColor:(UIColor *)textColor
                 textSize:(CGSize)textSize
            lineBreakMode:(CTLineBreakMode)lineBreakMode;
+
+
 
 /**
  *  ur text real size

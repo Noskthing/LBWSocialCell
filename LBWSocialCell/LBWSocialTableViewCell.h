@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "NSString+Draw.h"
 #import "UIImage+Filter.h"
+#import "NSAttributedString+Draw.h"
 
 #pragma mark    LBWSocialTableViewModel Class
 @interface LBWSocialTableViewModel : NSObject

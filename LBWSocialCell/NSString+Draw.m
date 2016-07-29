@@ -7,7 +7,7 @@
 //
 
 #import "NSString+Draw.h"
-#import "NSDictionary+AttributeString.h"
+
 
 @implementation NSString (Draw)
 

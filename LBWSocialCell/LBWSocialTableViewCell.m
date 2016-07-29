@@ -125,15 +125,189 @@
 }
 @end
 
-#pragma mark    ContentManager
-
-#define EmojiRegular @"(\\[\\w+\\])"
-
+#pragma mark    AttributeStringAttachment Class
+//this class copy from thirty lib 'M80AttributeLabel'
 typedef enum {
     ContentAlignmentTop,
     ContentAlignmentCenter,
     ContentAlignmentBottom
 }ContentAlignment;
+
+/*
+ 
+ CTRunDelegateCallback.
+ 
+ */
+void deallocCallback(void* ref);
+CGFloat ascentCallback(void *ref);
+CGFloat descentCallback(void *ref);
+CGFloat widthCallback(void* ref);
+
+@interface AttributeStringAttachment : NSObject
+
+@property (nonatomic,strong)id content;
+
+@property (nonatomic,assign)UIEdgeInsets margin;
+
+@property (nonatomic,assign)ContentAlignment alignment;
+
+@property (nonatomic,assign)CGFloat fontAscent;
+
+@property (nonatomic,assign)CGFloat fontDescent;
+
+@property (nonatomic,assign)CGSize maxSize;
+
++ (AttributeStringAttachment *)attachmentWith:(id)content
+                                       margin:(UIEdgeInsets)margin
+                                    alignment:(ContentAlignment)alignment
+                                      maxSize:(CGSize)maxSize;
+
+- (CGSize)boxSize;
+@end
+
+@implementation AttributeStringAttachment
+
+void deallocCallback(void* ref)
+{
+    
+}
+
+CGFloat ascentCallback(void *ref)
+{
+    AttributeStringAttachment *image = (__bridge AttributeStringAttachment *)ref;
+    CGFloat ascent = 0;
+    CGFloat height = [image boxSize].height;
+    switch (image.alignment)
+    {
+        case ContentAlignmentTop:
+            ascent = image.fontAscent;
+            break;
+        case ContentAlignmentCenter:
+        {
+            CGFloat fontAscent  = image.fontAscent;
+            CGFloat fontDescent = image.fontDescent;
+            CGFloat baseLine = (fontAscent + fontDescent) / 2 - fontDescent;
+            ascent = height / 2 + baseLine;
+        }
+            break;
+        case ContentAlignmentBottom:
+            ascent = height - image.fontDescent;
+            break;
+        default:
+            break;
+    }
+    return ascent;
+}
+
+CGFloat descentCallback(void *ref)
+{
+    AttributeStringAttachment *image = (__bridge AttributeStringAttachment *)ref;
+    CGFloat descent = 0;
+    CGFloat height = [image boxSize].height;
+    switch (image.alignment)
+    {
+        case ContentAlignmentTop:
+        {
+            descent = height - image.fontAscent;
+            break;
+        }
+        case ContentAlignmentCenter:
+        {
+            CGFloat fontAscent  = image.fontAscent;
+            CGFloat fontDescent = image.fontDescent;
+            CGFloat baseLine = (fontAscent + fontDescent) / 2 - fontDescent;
+            descent = height / 2 - baseLine;
+        }
+            break;
+        case ContentAlignmentBottom:
+        {
+            descent = image.fontDescent;
+            break;
+        }
+        default:
+            break;
+    }
+    
+    return descent;
+}
+
+CGFloat widthCallback(void* ref)
+{
+    AttributeStringAttachment *image  = (__bridge AttributeStringAttachment *)ref;
+    return [image boxSize].width;
+}
+
+
+
++ (AttributeStringAttachment *)attachmentWith:(id)content
+                                       margin:(UIEdgeInsets)margin
+                                    alignment:(ContentAlignment)alignment
+                                      maxSize:(CGSize)maxSize
+{
+    AttributeStringAttachment *attachment    = [[AttributeStringAttachment alloc]init];
+    attachment.content                          = content;
+    attachment.margin                           = margin;
+    attachment.alignment                        = alignment;
+    attachment.maxSize                          = maxSize;
+    return attachment;
+}
+
+- (CGSize)boxSize
+{
+    CGSize contentSize = [self attachmentSize];
+    if (_maxSize.width > 0 && _maxSize.height > 0 &&
+        contentSize.width > 0 && contentSize.height > 0)
+    {
+        contentSize = [self calculateContentSize];
+    }
+    return CGSizeMake(contentSize.width + _margin.left + _margin.right,
+                      contentSize.height+ _margin.top  + _margin.bottom);
+}
+
+#pragma mark - supplementary methods
+- (CGSize)calculateContentSize
+{
+    CGSize attachmentSize   = [self attachmentSize];
+    CGFloat width           = attachmentSize.width;
+    CGFloat height          = attachmentSize.height;
+    CGFloat newWidth        = _maxSize.width;
+    CGFloat newHeight       = _maxSize.height;
+    if (width <= newWidth &&
+        height<= newHeight)
+    {
+        return attachmentSize;
+    }
+    CGSize size;
+    if (width / height > newWidth / newHeight)
+    {
+        size = CGSizeMake(newWidth, newWidth * height / width);
+    }
+    else
+    {
+        size = CGSizeMake(newHeight * width / height, newHeight);
+    }
+    return size;
+}
+
+- (CGSize)attachmentSize
+{
+    CGSize size = CGSizeZero;
+    if ([_content isKindOfClass:[UIImage class]])
+    {
+        size = [((UIImage *)_content) size];
+    }
+    else if ([_content isKindOfClass:[UIView class]])
+    {
+        size = [((UIView *)_content) bounds].size;
+    }
+    return size;
+}
+@end
+
+
+#pragma mark    ContentManager Class
+
+#define EmojiRegular @"(\\[\\w+\\])"
 
 @interface ContentManager : NSObject
 
@@ -160,6 +334,12 @@ typedef enum {
                       string:(NSString *)string;
 @end
 
+@interface ContentManager()
+
+@property (nonatomic,copy)NSMutableAttributedString * attributeString;
+
+@end
+
 @implementation ContentManager
 
 -(instancetype)init
@@ -169,6 +349,8 @@ typedef enum {
         _font = [UIFont systemFontOfSize:17];
         _textColor = [UIColor blackColor];
         _contentAlignment = ContentAlignmentCenter;
+        
+        [self resetFont];
     }
     return self;
 }
@@ -189,23 +371,98 @@ typedef enum {
     return manager;
 }
 
--(void)drawContentText
+-(void)setFont:(UIFont *)font
 {
-//    NSArray* matches = [[NSRegularExpression regularExpressionWithPattern:EmojiRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self.string options:0 range:NSMakeRange(0,[self.string length])];
-    
-//    for(NSTextCheckingResult* match in matches)
-//    {
-////        [self.string substringWithRange:NS]
-////        match. =
-//    }
+    _font = font;
+    [self resetFont];
 }
 
+
+-(void)resetFont
+{
+    CTFontRef fontRef = CTFontCreateWithName((CFStringRef)self.font.fontName, self.font.pointSize, NULL);
+    if (fontRef)
+    {
+        _fontAscent     = CTFontGetAscent(fontRef);
+        _fontDescent    = CTFontGetDescent(fontRef);
+        //            _fontHeight     = CTFontGetSize(fontRef);
+        CFRelease(fontRef);
+    }
+}
+
+-(void)drawContentTextOnContext:(CGContextRef)context position:(CGPoint)position textSize:(CGSize)textSize
+{
+    //reset _attributeString 
+    _attributeString = [[NSMutableAttributedString alloc] init];
+    
+    NSArray* matches = [[NSRegularExpression regularExpressionWithPattern:EmojiRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self.string options:0 range:NSMakeRange(0,[self.string length])];
+    
+    NSMutableArray * imageNames = [NSMutableArray array];
+    
+    for(NSTextCheckingResult* match in matches)
+    {
+        NSString * imageName = [self.string substringWithRange:match.range];
+        [imageNames addObject:imageName];
+    }
+    
+    for (int i = 0; i < imageNames.count; i++)
+    {
+        self.string = [self.string stringByReplacingOccurrencesOfString:imageNames[i] withString:@"[^]"];
+    }
+    
+    NSArray * textArray = [self.string componentsSeparatedByString:@"[^]"];
+    
+    for (int i = 0 ; i < textArray.count; i ++)
+    {
+        NSDictionary * attributes = [NSDictionary attributesWithFont:_font textColor:_textColor linkBreakMode:kCTLineBreakByWordWrapping];
+        NSAttributedString * attributeString = [[NSAttributedString alloc] initWithString:textArray[i] attributes:attributes];
+        [_attributeString appendAttributedString:attributeString];
+        
+        if (i == textArray.count - 1)
+        {
+            break;
+        }
+        AttributeStringAttachment *attachment = [AttributeStringAttachment attachmentWith:[UIImage imageNamed:@"wheel"]
+                                                                                margin:_margin
+                                                                                alignment:_contentAlignment
+                                                                                  maxSize:_maxSize];
+        [self appendAttributeStringAttachment:attachment];
+    }
+    
+    [_attributeString drawTextOnContext:context position:position textSize:textSize];
+}
+
+- (void)appendAttributeStringAttachment:(AttributeStringAttachment *)attachment
+{
+    attachment.fontAscent                   = _fontAscent;
+    attachment.fontDescent                  = _fontDescent;
+    unichar objectReplacementChar           = 0xFFFC;
+    NSString *objectReplacementString       = [NSString stringWithCharacters:&objectReplacementChar length:1];
+    NSMutableAttributedString *attachText   = [[NSMutableAttributedString alloc]initWithString:objectReplacementString];
+    
+    CTRunDelegateCallbacks callbacks;
+    callbacks.version       = kCTRunDelegateVersion1;
+    callbacks.getAscent     = ascentCallback;
+    callbacks.getDescent    = descentCallback;
+    callbacks.getWidth      = widthCallback;
+    callbacks.dealloc       = deallocCallback;
+    
+    CTRunDelegateRef delegate = CTRunDelegateCreate(&callbacks, (void *)attachment);
+    NSDictionary *attr = [NSDictionary dictionaryWithObjectsAndKeys:(__bridge id)delegate,kCTRunDelegateAttributeName, nil];
+    [attachText setAttributes:attr range:NSMakeRange(0, 1)];
+    CFRelease(delegate);
+    
+//    [_attachments addObject:attachment];
+    [_attributeString appendAttributedString:attachText];
+}
 @end
 
 #pragma mark    LBWSocialTableViewCell
 @interface LBWSocialTableViewCell ()
 {
     ImageLayer * _icon;
+    
+    ContentManager * _contentManager;
 }
 @end
 
@@ -225,6 +482,8 @@ static CGFloat kNickNameLeftEdge = 60;
         _icon = [ImageLayer layer];
         _icon.frame = CGRectMake(kIconLeftEdge, kTopEdge, kIconSide, kIconSide);
         [self.layer addSublayer:_icon];
+        
+        _contentManager = [[ContentManager alloc] initWithFont:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] contentAlignment:ContentAlignmentCenter maxSize:self.frame.size string:@""];
     }
     return self;
 }
@@ -255,7 +514,9 @@ static CGFloat kNickNameLeftEdge = 60;
     
     [model.source drawTextOnContext:context position:CGPointMake(kNickNameLeftEdge, kTopEdge + 22) font:[UIFont systemFontOfSize:12] textColor:[UIColor lightGrayColor] textSize:CGSizeMake(self.frame.size.width - kNickNameLeftEdge, 18) lineBreakMode:kCTLineBreakByTruncatingTail];
     
-    [model.content drawTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 5) font:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] textSize:model.contentSize lineBreakMode:kCTLineBreakByWordWrapping];
+//    [model.content drawTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 5) font:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] textSize:model.contentSize lineBreakMode:kCTLineBreakByWordWrapping];
+    _contentManager.string = model.content;
+    [_contentManager drawContentTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 5) textSize:model.contentSize];
     
     //get image from context and set it as self.contentView.layer.content
     UIImage *contentImage = UIGraphicsGetImageFromCurrentImageContext();
