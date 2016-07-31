@@ -62,6 +62,7 @@
 - (void)setContentWitURL:(NSString *)url
 {
     self.cornerRadius = self.frame.size.width/2;
+    self.masksToBounds = YES;
     
     //UIImage.CGImage return CGImageRef type object so that u need use __bridge to change it.
     self.contents = (__bridge id)([UIImage imageNamed:@"placeHolder"].CGImage);
@@ -398,16 +399,19 @@ CGFloat widthCallback(void* ref)
     //reset _attributeString 
     _attributeString = [[NSMutableAttributedString alloc] init];
     
+    //find emoji text position
     NSArray* matches = [[NSRegularExpression regularExpressionWithPattern:EmojiRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self.string options:0 range:NSMakeRange(0,[self.string length])];
     
     NSMutableArray * imageNames = [NSMutableArray array];
     
+    //get imageName from string and save them
     for(NSTextCheckingResult* match in matches)
     {
         NSString * imageName = [self.string substringWithRange:match.range];
         [imageNames addObject:imageName];
     }
     
+    //replace emoji text by [^] so that we can component string
     for (int i = 0; i < imageNames.count; i++)
     {
         self.string = [self.string stringByReplacingOccurrencesOfString:imageNames[i] withString:@"[^]"];
@@ -415,16 +419,21 @@ CGFloat widthCallback(void* ref)
     
     NSArray * textArray = [self.string componentsSeparatedByString:@"[^]"];
     
+    //attributeString text mosaic
     for (int i = 0 ; i < textArray.count; i ++)
     {
+        //get attribute string
         NSDictionary * attributes = [NSDictionary attributesWithFont:_font textColor:_textColor linkBreakMode:kCTLineBreakByWordWrapping];
         NSAttributedString * attributeString = [[NSAttributedString alloc] initWithString:textArray[i] attributes:attributes];
         [_attributeString appendAttributedString:attributeString];
         
+        //because imageNames.count is eauqls to textArray.count - 1
         if (i == textArray.count - 1)
         {
             break;
         }
+        
+        //attachment mosaic
         AttributeStringAttachment *attachment = [AttributeStringAttachment attachmentWith:[UIImage imageNamed:@"wheel"]
                                                                                 margin:_margin
                                                                                 alignment:_contentAlignment
@@ -439,10 +448,13 @@ CGFloat widthCallback(void* ref)
 {
     attachment.fontAscent                   = _fontAscent;
     attachment.fontDescent                  = _fontDescent;
+    
+    //placeholder
     unichar objectReplacementChar           = 0xFFFC;
     NSString *objectReplacementString       = [NSString stringWithCharacters:&objectReplacementChar length:1];
     NSMutableAttributedString *attachText   = [[NSMutableAttributedString alloc]initWithString:objectReplacementString];
     
+    //set callback
     CTRunDelegateCallbacks callbacks;
     callbacks.version       = kCTRunDelegateVersion1;
     callbacks.getAscent     = ascentCallback;
@@ -455,7 +467,9 @@ CGFloat widthCallback(void* ref)
     [attachText setAttributes:attr range:NSMakeRange(0, 1)];
     CFRelease(delegate);
     
+    //keep attachment object will not be dealloced by system so that it will become NSCFType in callback
     [_attachments addObject:attachment];
+    
     [_attributeString appendAttributedString:attachText];
 }
 @end
@@ -517,7 +531,6 @@ static CGFloat kNickNameLeftEdge = 60;
     
     [model.source drawTextOnContext:context position:CGPointMake(kNickNameLeftEdge, kTopEdge + 22) font:[UIFont systemFontOfSize:12] textColor:[UIColor lightGrayColor] textSize:CGSizeMake(self.frame.size.width - kNickNameLeftEdge, 18) lineBreakMode:kCTLineBreakByTruncatingTail];
     
-//    [model.content drawTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 5) font:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] textSize:model.contentSize lineBreakMode:kCTLineBreakByWordWrapping];
     _contentManager.string = model.content;
     [_contentManager drawContentTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 5) textSize:model.contentSize];
     
