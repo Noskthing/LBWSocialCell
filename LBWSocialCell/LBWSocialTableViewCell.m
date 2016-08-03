@@ -434,14 +434,26 @@ CGFloat widthCallback(void* ref)
         }
         
         //attachment mosaic
-        AttributeStringAttachment *attachment = [AttributeStringAttachment attachmentWith:[UIImage imageNamed:@"wheel"]
+        AttributeStringAttachment *attachment = [AttributeStringAttachment attachmentWith:[UIImage imageNamed:@"placeHolder"]
                                                                                 margin:_margin
                                                                                 alignment:_contentAlignment
-                                                                                  maxSize:CGSizeMake(15, 15)];
+                                                                                  maxSize:CGSizeMake(20, 20)];
         [self appendAttributeStringAttachment:attachment];
     }
     
+    //replace placeholder
+    CGMutablePathRef path = CGPathCreateMutable();
+    CGPathAddRect(path, NULL, CGRectMake(position.x, -position.y, textSize.width, textSize.height));
+    
+    CFAttributedStringRef cfAttributeStringRef = (__bridge CFAttributedStringRef)_attributeString;
+    CTFramesetterRef frameSetterRef = CTFramesetterCreateWithAttributedString(cfAttributeStringRef);
+    CTFrameRef frameRef = CTFramesetterCreateFrame(frameSetterRef, CFRangeMake(0, 0), path, NULL);
+    [self drawAttachments:context frame:frameRef];
+    
+    //draw
     [_attributeString drawTextOnContext:context position:position textSize:textSize];
+    
+    [self drawAttachments:context frame:frameRef];
 }
 
 - (void)appendAttributeStringAttachment:(AttributeStringAttachment *)attachment
@@ -471,6 +483,129 @@ CGFloat widthCallback(void* ref)
     [_attachments addObject:attachment];
     
     [_attributeString appendAttributedString:attachText];
+}
+
+-(void)drawAttachments:(CGContextRef)context frame:(CTFrameRef)frame
+{
+    CGContextSetTextMatrix(context, CGAffineTransformIdentity);
+    CGContextTranslateCTM(context, 0, _maxSize.height);
+    CGContextScaleCTM(context,1.0, -1.0);
+    
+    //no attachment
+    if (_attachments.count == 0)
+    {
+        return;
+    }
+    
+    //get CTRun
+    CFArrayRef lines = CTFrameGetLines(frame);
+    CFIndex lineCount = CFArrayGetCount(lines);
+    CGPoint lineOrigins[lineCount];  //C type?
+    CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), lineOrigins);
+    
+    
+    NSInteger numberOfLines = CFArrayGetCount(lines);
+    
+    for (CFIndex i = 0; i < numberOfLines; i++)
+    {
+        CTLineRef line = CFArrayGetValueAtIndex(lines, i);
+        CFArrayRef runs = CTLineGetGlyphRuns(line);
+        CFIndex runCount = CFArrayGetCount(runs);
+        CGPoint lineOrigin = lineOrigins[i];
+        CGFloat lineAscent;
+        CGFloat lineDescent;
+        CTLineGetTypographicBounds(line, &lineAscent, &lineDescent, NULL);
+        CGFloat lineHeight = lineAscent  + lineDescent;
+        CGFloat lineBottomY = lineOrigin.y - lineDescent;
+        
+        for (CFIndex k = 0; k < runCount; k++)
+        {
+            CTRunRef run = CFArrayGetValueAtIndex(runs, k);
+            NSDictionary * runAttributes = (NSDictionary *)CTRunGetAttributes(run);
+            CTRunDelegateRef delegate = (__bridge CTRunDelegateRef)[runAttributes valueForKey:(id)kCTRunDelegateAttributeName];
+            if (delegate == nil)
+            {
+                continue;
+            }
+            AttributeStringAttachment * attributedImage = (AttributeStringAttachment *)CTRunDelegateGetRefCon(delegate);
+            
+            CGFloat ascent = 0.0f;
+            CGFloat descent = 0.0f;
+            CGFloat width = (CGFloat)CTRunGetTypographicBounds(run,
+                                                               CFRangeMake(0, 0),
+                                                               &ascent,
+                                                               &descent,
+                                                               NULL);
+            
+            CGFloat imageBoxHeight = [attributedImage boxSize].height;
+            
+            CGFloat xOffset = CTLineGetOffsetForStringIndex(line, CTRunGetStringRange(run).location, nil);
+            
+            CGFloat imageBoxOriginY = 0.0f;
+            switch (attributedImage.alignment)
+            {
+                case ContentAlignmentTop:
+                    imageBoxOriginY = lineBottomY + (lineHeight - imageBoxHeight);
+                    break;
+                case ContentAlignmentCenter:
+                    imageBoxOriginY = lineBottomY + (lineHeight - imageBoxHeight)/ 2.0;
+                    break;
+                case ContentAlignmentBottom:
+                    imageBoxOriginY = lineBottomY;
+                    break;
+            }
+            
+            NSLog(@"imageoxY is %f",imageBoxOriginY);
+            
+            CGRect rect = CGRectMake(lineOrigin.x + xOffset + 10, imageBoxOriginY - 90, width, imageBoxHeight);
+            UIEdgeInsets flippedMargins = attributedImage.margin;
+            CGFloat top = flippedMargins.top;
+            flippedMargins.top = flippedMargins.bottom;
+            flippedMargins.bottom = top;
+            
+            CGRect attatchmentRect = UIEdgeInsetsInsetRect(rect, flippedMargins);
+            
+            if (i == numberOfLines - 1 &&
+                k >= runCount - 2)
+            {
+//                //最后行最后的2个CTRun需要做额外判断
+//                CGFloat attachmentWidth = CGRectGetWidth(attatchmentRect);
+//                const CGFloat kMinEllipsesWidth = attachmentWidth;
+//                if (CGRectGetWidth(self.bounds) - CGRectGetMinX(attatchmentRect) - attachmentWidth <  kMinEllipsesWidth)
+//                {
+//                    continue;
+//                }
+            }
+            
+            id content = attributedImage.content;
+            if ([content isKindOfClass:[UIImage class]])
+            {
+                CGContextDrawImage(context, attatchmentRect, ((UIImage *)content).CGImage);
+            }
+//            else if ([content isKindOfClass:[UIView class]])
+//            {
+//                UIView *view = (UIView *)content;
+//                if (view.superview == nil)
+//                {
+//                    [self addSubview:view];
+//                }
+//                CGRect viewFrame = CGRectMake(attatchmentRect.origin.x,
+//                                              self.bounds.size.height - attatchmentRect.origin.y - attatchmentRect.size.height,
+//                                              attatchmentRect.size.width,
+//                                              attatchmentRect.size.height);
+//                [view setFrame:viewFrame];
+//            }
+            else
+            {
+                NSLog(@"Attachment Content Not Supported %@",content);
+            }
+
+
+        }
+    }
+    CGContextSetTextMatrix(context,CGAffineTransformIdentity);
+    CGContextTranslateCTM(context,0, _maxSize.height);
+    CGContextScaleCTM(context,1.0,-1.0);
 }
 @end
 

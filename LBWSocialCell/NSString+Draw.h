@@ -41,5 +41,8 @@
  *
  *  @return size for ur text
  */
--(CGSize)textSizeWithConstrainedOfMaxSize:(CGSize)maxSize font:(UIFont *)font lineSpace:(CGFloat)lineSpace lineBreakMode:(CTLineBreakMode)lineBreakMode;
+-(CGSize)textSizeWithConstrainedOfMaxSize:(CGSize)maxSize
+                                     font:(UIFont *)font
+                                lineSpace:(CGFloat)lineSpace
+                            lineBreakMode:(CTLineBreakMode)lineBreakMode;
 @end
