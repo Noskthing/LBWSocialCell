@@ -18,7 +18,11 @@
 {
     if (self = [super init])
     {
-        self.cellHeight = 65;
+        _cellHeight = 65;
+        _content = @"";
+        _repostContent = @"";
+        _contentSize = CGSizeMake(0, 0);
+        _repostContentSize = CGSizeMake(0, 0);
     }
     
     return self;
@@ -54,14 +58,19 @@
  *
  *  @param url image url
  */
-- (void)setContentWitURL:(NSString *)url;
+- (void)setContentWitURL:(NSString *)url Type:(NSString *)type;
+
 @end
 
 @implementation ImageLayer
 
-- (void)setContentWitURL:(NSString *)url
+- (void)setContentWitURL:(NSString *)url Type:(NSString *)type
 {
-    self.cornerRadius = self.frame.size.width/2;
+    if ([type isEqualToString:@"Icon"])
+    {
+        self.cornerRadius = self.frame.size.width/2;
+    }
+
     self.masksToBounds = YES;
     
     //UIImage.CGImage return CGImageRef type object so that u need use __bridge to change it.
@@ -309,6 +318,8 @@ CGFloat widthCallback(void* ref)
 #pragma mark    ContentManager Class
 
 #define EmojiRegular @"(\\[\\w+\\])"
+#define URLRegular @"(http|https)://(t.cn/|weibo.com/)+(([a-zA-Z0-9/])*)"
+#define AccountRegular @"@[\u4e00-\u9fa5a-zA-Z0-9_-]{2,30}"
 
 @interface ContentManager : NSObject
 
@@ -327,6 +338,10 @@ CGFloat widthCallback(void* ref)
 @property (nonatomic,assign)CGFloat fontDescent;
 
 @property (nonatomic,assign)CGSize maxSize;
+
+@property (nonatomic,assign)CGSize textSize;
+
+@property (nonatomic,assign)CGPoint position;
 
 - (instancetype)initWithFont:(UIFont *)font
                    textColor:(UIColor *)textColor
@@ -348,11 +363,11 @@ CGFloat widthCallback(void* ref)
 {
     if (self = [super init])
     {
-        _font = [UIFont systemFontOfSize:17];
-        _textColor = [UIColor blackColor];
+        _font             = [UIFont systemFontOfSize:17];
+        _textColor        = [UIColor blackColor];
         _contentAlignment = ContentAlignmentCenter;
         
-        _attachments = [NSMutableArray array];
+        _attachments      = [NSMutableArray array];
         
         [self resetFont];
     }
@@ -366,11 +381,11 @@ CGFloat widthCallback(void* ref)
     NSAssert(contentAlignment, @"ContentAlignment can not be nil");
     
     ContentManager * manager = [self init];
-    manager.font = font;
-    manager.textColor = textColor;
+    manager.font             = font;
+    manager.textColor        = textColor;
     manager.contentAlignment = contentAlignment;
-    manager.maxSize = maxSize;
-    manager.string = string;
+    manager.maxSize          = maxSize;
+    manager.string           = string;
     
     return manager;
 }
@@ -396,49 +411,66 @@ CGFloat widthCallback(void* ref)
 
 -(void)drawContentTextOnContext:(CGContextRef)context position:(CGPoint)position textSize:(CGSize)textSize
 {
-    //reset _attributeString 
-    _attributeString = [[NSMutableAttributedString alloc] init];
+    _position = position;
+    _textSize = textSize;
+    
+    //init _attributeString
+    NSDictionary * attributes = [NSDictionary attributesWithFont:_font textColor:_textColor linkBreakMode:kCTLineBreakByCharWrapping];
+    _attributeString = [[[NSAttributedString alloc] initWithString:self.string attributes:attributes] mutableCopy];
+    
+    /* emoji */
     
     //find emoji text position
-    NSArray* matches = [[NSRegularExpression regularExpressionWithPattern:EmojiRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self.string options:0 range:NSMakeRange(0,[self.string length])];
+    NSArray* matches = [[NSRegularExpression regularExpressionWithPattern:EmojiRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self.attributeString.string options:0 range:NSMakeRange(0,[self.attributeString.string length])];
+
+    //save rang.location offset
+    NSInteger emojiStringOffset = 0;
     
-    NSMutableArray * imageNames = [NSMutableArray array];
-    
-    //get imageName from string and save them
-    for(NSTextCheckingResult* match in matches)
+    for(NSTextCheckingResult * match in matches)
     {
+        NSRange currentRange = NSMakeRange(match.range.location - emojiStringOffset, match.range.length);
+        
         NSString * imageName = [self.string substringWithRange:match.range];
-        [imageNames addObject:imageName];
-    }
-    
-    //replace emoji text by [^] so that we can component string
-    for (int i = 0; i < imageNames.count; i++)
-    {
-        self.string = [self.string stringByReplacingOccurrencesOfString:imageNames[i] withString:@"[^]"];
-    }
-    
-    NSArray * textArray = [self.string componentsSeparatedByString:@"[^]"];
-    
-    //attributeString text mosaic
-    for (int i = 0 ; i < textArray.count; i ++)
-    {
-        //get attribute string
-        NSDictionary * attributes = [NSDictionary attributesWithFont:_font textColor:_textColor linkBreakMode:kCTLineBreakByWordWrapping];
-        NSAttributedString * attributeString = [[NSAttributedString alloc] initWithString:textArray[i] attributes:attributes];
-        [_attributeString appendAttributedString:attributeString];
+        imageName = [imageName substringWithRange:NSMakeRange(1, imageName.length -2)];
         
-        //because imageNames.count is eauqls to textArray.count - 1
-        if (i == textArray.count - 1)
-        {
-            break;
-        }
-        
-        //attachment mosaic
-        AttributeStringAttachment *attachment = [AttributeStringAttachment attachmentWith:[UIImage imageNamed:@"placeHolder"]
-                                                                                margin:_margin
+        AttributeStringAttachment *attachment = [AttributeStringAttachment attachmentWith:[UIImage imageNamed:imageName]
+                                                                                   margin:_margin
                                                                                 alignment:_contentAlignment
                                                                                   maxSize:CGSizeMake(20, 20)];
-        [self appendAttributeStringAttachment:attachment];
+    
+        [self appendAttributeStringEmojiAttachment:attachment Range:currentRange];
+        
+        //get the sub string's offset so that we can get current range in the next setup
+        emojiStringOffset = emojiStringOffset  + match.range.length - 1;
+    }
+    
+    
+    /* url */
+    NSArray* urlMatches = [[NSRegularExpression regularExpressionWithPattern:URLRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self.attributeString.string options:0 range:NSMakeRange(0,[self.attributeString.string length])];
+
+    NSInteger urlStringOffset = 0;
+    for(NSTextCheckingResult * match in urlMatches)
+    {
+        NSRange currentRange = NSMakeRange(match.range.location - urlStringOffset, match.range.length);
+        
+        AttributeStringAttachment *attachment = [AttributeStringAttachment attachmentWith:[UIImage imageNamed:@"urlIcon"]
+                                                                                   margin:_margin
+                                                                                alignment:_contentAlignment
+                                                                                  maxSize:CGSizeMake(22, 22)];
+//        NSString * urlString = [self.string substringWithRange:match.range];
+        [self appendAttributeStringUrlAttachment:attachment Range:currentRange];
+        
+        urlStringOffset = urlStringOffset + match.range.length - 5;
+    }
+    
+    /* user account */
+    NSArray* accountMatches = [[NSRegularExpression regularExpressionWithPattern:AccountRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self.attributeString.string options:0 range:NSMakeRange(0,[self.attributeString.string length])];
+    
+    NSDictionary * colorAttributes = [NSDictionary attributesWithFont:_font textColor:[UIColor colorWithRed:106/255.0 green:140/255.0 blue:181/255.0 alpha:1] linkBreakMode:kCTLineBreakByCharWrapping];
+    
+    for(NSTextCheckingResult * match in accountMatches)
+    {
+        [self.attributeString setAttributes:colorAttributes range:match.range];
     }
     
     //replace placeholder
@@ -448,7 +480,7 @@ CGFloat widthCallback(void* ref)
     CFAttributedStringRef cfAttributeStringRef = (__bridge CFAttributedStringRef)_attributeString;
     CTFramesetterRef frameSetterRef = CTFramesetterCreateWithAttributedString(cfAttributeStringRef);
     CTFrameRef frameRef = CTFramesetterCreateFrame(frameSetterRef, CFRangeMake(0, 0), path, NULL);
-    [self drawAttachments:context frame:frameRef];
+
     
     //draw
     [_attributeString drawTextOnContext:context position:position textSize:textSize];
@@ -456,13 +488,14 @@ CGFloat widthCallback(void* ref)
     [self drawAttachments:context frame:frameRef];
 }
 
-- (void)appendAttributeStringAttachment:(AttributeStringAttachment *)attachment
+- (void)appendAttributeStringEmojiAttachment:(AttributeStringAttachment *)attachment Range:(NSRange)range
 {
     attachment.fontAscent                   = _fontAscent;
     attachment.fontDescent                  = _fontDescent;
     
     //placeholder
-    unichar objectReplacementChar           = 0xFFFC;
+    unichar objectReplacementChar   = 0xFFFC;
+    
     NSString *objectReplacementString       = [NSString stringWithCharacters:&objectReplacementChar length:1];
     NSMutableAttributedString *attachText   = [[NSMutableAttributedString alloc]initWithString:objectReplacementString];
     
@@ -482,7 +515,40 @@ CGFloat widthCallback(void* ref)
     //keep attachment object will not be dealloced by system so that it will become NSCFType in callback
     [_attachments addObject:attachment];
     
-    [_attributeString appendAttributedString:attachText];
+    [_attributeString replaceCharactersInRange:range withAttributedString:attachText];
+}
+
+- (void)appendAttributeStringUrlAttachment:(AttributeStringAttachment *)attachment Range:(NSRange)range
+{
+    attachment.fontAscent                   = _fontAscent;
+    attachment.fontDescent                  = _fontDescent;
+    
+    //placeholder
+    unichar objectReplacementChar   = 0xFFFC;
+    
+    NSString *objectReplacementString       = [NSString stringWithCharacters:&objectReplacementChar length:1];
+    NSMutableAttributedString *attachText   = [[NSMutableAttributedString alloc]initWithString:objectReplacementString];
+    
+    NSDictionary * attributes = [NSDictionary attributesWithFont:_font textColor:[UIColor colorWithRed:106/255.0 green:140/255.0 blue:181/255.0 alpha:1] linkBreakMode:kCTLineBreakByCharWrapping];
+    [attachText appendAttributedString:[[NSAttributedString alloc] initWithString:@"网页链接" attributes:attributes]];
+    
+    //set callback
+    CTRunDelegateCallbacks callbacks;
+    callbacks.version       = kCTRunDelegateVersion1;
+    callbacks.getAscent     = ascentCallback;
+    callbacks.getDescent    = descentCallback;
+    callbacks.getWidth      = widthCallback;
+    callbacks.dealloc       = deallocCallback;
+    
+    CTRunDelegateRef delegate = CTRunDelegateCreate(&callbacks, (void *)attachment);
+    NSDictionary *attr = [NSDictionary dictionaryWithObjectsAndKeys:(__bridge id)delegate,kCTRunDelegateAttributeName, nil];
+    [attachText setAttributes:attr range:NSMakeRange(0, 1)];
+    CFRelease(delegate);
+    
+    //keep attachment object will not be dealloced by system so that it will become NSCFType in callback
+    [_attachments addObject:attachment];
+    
+    [_attributeString replaceCharactersInRange:range withAttributedString:attachText];
 }
 
 -(void)drawAttachments:(CGContextRef)context frame:(CTFrameRef)frame
@@ -503,7 +569,6 @@ CGFloat widthCallback(void* ref)
     CGPoint lineOrigins[lineCount];  //C type?
     CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), lineOrigins);
     
-    
     NSInteger numberOfLines = CFArrayGetCount(lines);
     
     for (CFIndex i = 0; i < numberOfLines; i++)
@@ -517,6 +582,9 @@ CGFloat widthCallback(void* ref)
         CTLineGetTypographicBounds(line, &lineAscent, &lineDescent, NULL);
         CGFloat lineHeight = lineAscent  + lineDescent;
         CGFloat lineBottomY = lineOrigin.y - lineDescent;
+        
+//        NSLog(@"x is %f  y is %f",lineOrigin.x,lineOrigin.y);
+        
         
         for (CFIndex k = 0; k < runCount; k++)
         {
@@ -545,19 +613,36 @@ CGFloat widthCallback(void* ref)
             switch (attributedImage.alignment)
             {
                 case ContentAlignmentTop:
-                    imageBoxOriginY = lineBottomY + (lineHeight - imageBoxHeight);
+                    imageBoxOriginY = _maxSize.height - _position.y - _textSize.height + lineBottomY + lineHeight;
                     break;
                 case ContentAlignmentCenter:
-                    imageBoxOriginY = lineBottomY + (lineHeight - imageBoxHeight)/ 2.0;
+                    imageBoxOriginY = _maxSize.height - _position.y - _textSize.height + lineBottomY + 2;
                     break;
                 case ContentAlignmentBottom:
-                    imageBoxOriginY = lineBottomY;
+                    imageBoxOriginY = _maxSize.height - _position.y - _textSize.height + lineBottomY - lineHeight;
                     break;
             }
             
-            NSLog(@"imageoxY is %f",imageBoxOriginY);
             
-            CGRect rect = CGRectMake(lineOrigin.x + xOffset + 10, imageBoxOriginY - 90, width, imageBoxHeight);
+            
+//            CGFloat height =  _textSize.height - lineOrigin.y + 24;
+            
+            /*
+             
+             context原坐标点是左上角，同UI的坐标系。翻转平移成左下原点，上右为正的坐标系。
+             
+             content绘制的部分是左上顶点在_position位置 size为_textSize的一个矩形。它的原点是左下顶点。
+             
+             所以为了能够对齐，我们需要将原点横向平移_position.x 竖直方向向上平移_maxSize.height - _position.y - _textSize.height
+             
+             这样对齐以后我们就可以用获取的lineOrigin.y来设置图片的位置  但是因为lineOrigin.y多了一个底部的行间距，所以移除掉
+             
+             这样就对齐了
+             
+             英语水平不够实在憋不出来英文注释了。。。
+             
+            */
+            CGRect rect = CGRectMake(xOffset + _position.x,imageBoxOriginY, width, imageBoxHeight);
             UIEdgeInsets flippedMargins = attributedImage.margin;
             CGFloat top = flippedMargins.top;
             flippedMargins.top = flippedMargins.bottom;
@@ -609,12 +694,50 @@ CGFloat widthCallback(void* ref)
 }
 @end
 
+#pragma mark    UIButton Category
+@interface UIButton (BottomWidget)
+
+- (void) changeTitle:(NSString *)title forState:(UIControlState)state;
+
+@end
+
+
+@implementation UIButton (BottomWidget)
+
+- (void) changeTitle:(NSString *)title forState:(UIControlState)state
+{
+    CGFloat space = 7;
+    CGFloat edge = self.frame.size.height - space * 2;
+    CGFloat inset = 30;
+    
+    CGSize titleSize = [title boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, edge) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName:self.titleLabel.font} context:nil].size;
+    
+    [self setImageEdgeInsets:UIEdgeInsetsMake(space,(self.frame.size.width - edge - inset - titleSize.width)/2,space,self.frame.size.width - edge - (self.frame.size.width - edge - inset - titleSize.width)/2)];
+    
+    [self.titleLabel setBackgroundColor:[UIColor clearColor]];
+    
+    [self setTitleEdgeInsets:UIEdgeInsetsMake(0 , self.frame.size.width - (self.frame.size.width - edge - inset - titleSize.width)/2 - titleSize.width  - self.frame.size.width/2, 0 , (self.frame.size.width - edge - inset - titleSize.width)/2)];
+    [self setTitle:title forState:state];
+    
+}
+@end
+
 #pragma mark    LBWSocialTableViewCell
 @interface LBWSocialTableViewCell ()
 {
     ImageLayer * _icon;
     
     ContentManager * _contentManager;
+    
+    ContentManager * _repostManager;
+    
+    UIButton * _repostBtn;
+    
+    UIButton * _commentBtn;
+    
+    UIButton * _starBtn;
+    
+    CGFloat _btnWidth;
 }
 @end
 
@@ -623,6 +746,7 @@ static CGFloat kIconLeftEdge = 10;
 static CGFloat kIconSide = 40;
 
 static CGFloat kNickNameLeftEdge = 60;
+
 @implementation LBWSocialTableViewCell
 
 -(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
@@ -636,10 +760,33 @@ static CGFloat kNickNameLeftEdge = 60;
         [self.layer addSublayer:_icon];
         
         _contentManager = [[ContentManager alloc] initWithFont:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] contentAlignment:ContentAlignmentCenter maxSize:self.frame.size string:@""];
+        
+        _repostManager = [[ContentManager alloc] initWithFont:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] contentAlignment:ContentAlignmentCenter maxSize:self.frame.size string:@""];
+        
+        _repostBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
+        [_repostBtn setImage:[UIImage imageNamed:@"share"] forState:UIControlStateNormal];
+        [_repostBtn setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+        [_repostBtn.titleLabel setFont:[UIFont systemFontOfSize:13.0]];
+        [self addSubview:_repostBtn];
+        
+        _commentBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
+        [_commentBtn setImage:[UIImage imageNamed:@"comment"] forState:UIControlStateNormal];
+        [_commentBtn setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+        [_commentBtn.titleLabel setFont:[UIFont systemFontOfSize:13.0]];
+        [self addSubview:_commentBtn];
+        
+        _starBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
+        [_starBtn setImage:[UIImage imageNamed:@"star"] forState:UIControlStateNormal];
+        [_starBtn setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+        [_starBtn.titleLabel setFont:[UIFont systemFontOfSize:13.0]];
+        [self addSubview:_starBtn];
+        
+        _btnWidth = self.frame.size.width/3;
     }
     return self;
 }
 
+#pragma mark     -draw method
 -(void)drawContentWithModel:(LBWSocialTableViewModel *)model
 {
     //get current context
@@ -659,15 +806,20 @@ static CGFloat kNickNameLeftEdge = 60;
     CGContextFillRect(context, CGRectMake(0, 0, self.frame.size.width, self.frame.size.height));
     
     //icon's layer is self.contentView's subLayer
-    [_icon setContentWitURL:model.iconUrl];
+    [_icon setContentWitURL:model.iconUrl Type:@"Icon"];
     
     //draw text on context which is self.contentView.layer.content
     [model.nickName drawTextOnContext:context position:CGPointMake(kNickNameLeftEdge, kTopEdge) font:[UIFont systemFontOfSize:15] textColor:[UIColor blackColor] textSize:CGSizeMake(self.frame.size.width - kNickNameLeftEdge, 22) lineBreakMode:kCTLineBreakByTruncatingTail];
     
     [model.source drawTextOnContext:context position:CGPointMake(kNickNameLeftEdge, kTopEdge + 22) font:[UIFont systemFontOfSize:12] textColor:[UIColor lightGrayColor] textSize:CGSizeMake(self.frame.size.width - kNickNameLeftEdge, 18) lineBreakMode:kCTLineBreakByTruncatingTail];
     
+    [self drawRectAngle:context frame:CGRectMake(0, kTopEdge + kIconSide + 10 + model.contentSize.height + 5, self.frame.size.width, model.repostContentSize.height + 10)];
+
     _contentManager.string = model.content;
-    [_contentManager drawContentTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 5) textSize:model.contentSize];
+    [_contentManager drawContentTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 10) textSize:model.contentSize];
+    
+    _repostManager.string = model.repostContent;
+    [_repostManager drawContentTextOnContext:context position:CGPointMake(kIconLeftEdge, kTopEdge + kIconSide + 10 + model.contentSize.height + 10) textSize:model.repostContentSize];
     
     //get image from context and set it as self.contentView.layer.content
     UIImage *contentImage = UIGraphicsGetImageFromCurrentImageContext();
@@ -675,8 +827,40 @@ static CGFloat kNickNameLeftEdge = 60;
     
     self.contentView.layer.contents = (__bridge id)contentImage.CGImage;
     
+    /* bottom widget */
+    _repostBtn.frame = CGRectMake(0, self.frame.size.height - 30, _btnWidth, 30);
+    [_repostBtn changeTitle:@"13" forState:UIControlStateNormal];
+    
+    _commentBtn.frame = CGRectMake(_btnWidth, self.frame.size.height - 30, _btnWidth, 30);
+    [_commentBtn changeTitle:@"1223" forState:UIControlStateNormal];
+    
+    _starBtn.frame = CGRectMake(_btnWidth * 2, self.frame.size.height - 30, _btnWidth, 30);
+    [_starBtn changeTitle:@"1万" forState:UIControlStateNormal];
 }
 
-#pragma mark    -Touch Events
+-(void)drawRectAngle:(CGContextRef)context frame:(CGRect)rect
+{
+    CGMutablePathRef path = CGPathCreateMutable();
+    
+    CGRect rectangle = rect;
+   
+    CGPathAddRect(path,NULL, rectangle);
+   
+    CGContextAddPath(context, path);
+    
+    [[UIColor colorWithRed:0.937f green:0.937f blue:0.957f alpha:1.00f] setFill];
+    
+    [[UIColor colorWithRed:0.937f green:0.937f blue:0.957f alpha:1.00f] setStroke];
+    
+    CGContextSetLineWidth(context,0.5f);
+   
+    CGContextDrawPath(context, kCGPathFillStroke);
+
+    CGPathRelease(path);
+}
 
 @end
+
+
+
+

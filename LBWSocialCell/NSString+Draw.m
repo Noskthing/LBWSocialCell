@@ -52,11 +52,42 @@
     CGContextScaleCTM(context,1.0,-1.0);
 }
 
+#define EmojiRegular @"(\\[\\w+\\])"
+#define URLRegular @"(http|https)://(t.cn/|weibo.com/)+(([a-zA-Z0-9/])*)"
 - (CGSize)textSizeWithConstrainedOfMaxSize:(CGSize)maxSize font:(UIFont *)font lineSpace:(CGFloat)lineSpace lineBreakMode:(CTLineBreakMode)lineBreakMode
 {
+    
+    NSArray* matches = [[NSRegularExpression regularExpressionWithPattern:EmojiRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:self options:0 range:NSMakeRange(0,[self length])];
+    
+   
+    NSString * tmp = self;
+    
+    //get imageName from string and save them
+    NSInteger emojiOffSet = 0;
+    
+    for(NSTextCheckingResult * match in matches)
+    {
+        NSRange range = NSMakeRange(match.range.location - emojiOffSet, match.range.length);
+        tmp = [tmp stringByReplacingCharactersInRange:range withString:@"啊 "];
+        emojiOffSet = emojiOffSet + match.range.length - 1;
+    }
+    
+    /* url */
+    NSArray* urlMatches = [[NSRegularExpression regularExpressionWithPattern:URLRegular options:NSRegularExpressionDotMatchesLineSeparators error:nil] matchesInString:tmp options:0 range:NSMakeRange(0,[tmp length])];
+    
+    NSInteger urlOffSet = 0;
+    
+    for(NSTextCheckingResult * match in urlMatches)
+    {
+        NSRange range = NSMakeRange(match.range.location - urlOffSet, match.range.length);
+        tmp = [tmp stringByReplacingCharactersInRange:range withString:@"啊 网页链接"];
+        urlOffSet = urlOffSet + match.range.length - 5;
+    }
+    
+    
     NSDictionary * attributes = [NSDictionary attributesWithFont:font textColor:nil linkBreakMode:lineBreakMode];
     
-    NSMutableAttributedString * attributeString = [[NSMutableAttributedString alloc] initWithString:self attributes:attributes];
+    NSMutableAttributedString * attributeString = [[NSMutableAttributedString alloc] initWithString:tmp attributes:attributes];
     CFAttributedStringRef attributeStringRef = (__bridge CFAttributedStringRef)attributeString;
     
     CTFramesetterRef frameSetter = CTFramesetterCreateWithAttributedString(attributeStringRef);

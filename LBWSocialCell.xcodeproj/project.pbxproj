@@ -56,6 +56,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		6D9096BC1D79700300FB1830 /* LBWSocialCellHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LBWSocialCellHeader.h; sourceTree = "<group>"; };
 		6D9DCD0B1D4B24A40089B9E9 /* NSAttributedString+Draw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSAttributedString+Draw.h"; sourceTree = "<group>"; };
 		6D9DCD0C1D4B24A40089B9E9 /* NSAttributedString+Draw.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSAttributedString+Draw.m"; sourceTree = "<group>"; };
 		6DFFB7511D42056100BC52C7 /* LBWSocialCell.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LBWSocialCell.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -169,6 +170,7 @@
 				FF41E7231D433B4A0012657E /* Category */,
 				6DFFB7BC1D42060300BC52C7 /* LBWSocialTableViewCell.h */,
 				6DFFB7BD1D42060300BC52C7 /* LBWSocialTableViewCell.m */,
+				6D9096BC1D79700300FB1830 /* LBWSocialCellHeader.h */,
 				6DFFB7571D42056100BC52C7 /* AppDelegate.h */,
 				6DFFB7581D42056100BC52C7 /* AppDelegate.m */,
 				6DFFB75A1D42056100BC52C7 /* ViewController.h */,
@@ -325,6 +327,7 @@
 		6DFFB7491D42056100BC52C7 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				CLASSPREFIX = LBW;
 				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = "李博文";
 				TargetAttributes = {

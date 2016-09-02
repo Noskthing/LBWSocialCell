@@ -23,8 +23,6 @@
     CGContextTranslateCTM(context, 0, textSize.height);
     CGContextScaleCTM(context,1.0, -1.0);
     
-   
-    
     //set draw path rect
     CGMutablePathRef path = CGPathCreateMutable();
     CGPathAddRect(path, NULL, CGRectMake(position.x, -position.y, textSize.width, textSize.height));

@@ -22,6 +22,10 @@
 
 @property (nonatomic,copy)NSString * content;
 
+@property (nonatomic,assign)CGSize repostContentSize;
+
+@property (nonatomic,copy)NSString * repostContent;
+
 @property (nonatomic,assign)CGSize contentSize;
 
 @property (nonatomic,assign)CGFloat cellHeight;
